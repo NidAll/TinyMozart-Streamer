@@ -183,6 +183,7 @@ st.markdown(
       <div class="tm-stat"><div class="tm-label">Rejected</div><div class="tm-value">{status.rejected_candidates}</div></div>
       <div class="tm-stat"><div class="tm-label">Mode</div><div class="tm-value">{selected_mode}</div></div>
       <div class="tm-stat"><div class="tm-label">Backend</div><div class="tm-value">{STREAMER_VERSION}</div></div>
+      <div class="tm-stat"><div class="tm-label">Audio</div><div class="tm-value">{status.audio_backend}</div></div>
       <div class="tm-stat tm-wide"><div class="tm-label">Quality Metrics</div><div class="tm-metrics">{status.last_metrics or "Waiting for candidate scores"}</div></div>
     </div>
     """,

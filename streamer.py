@@ -41,6 +41,7 @@ class StreamStatus:
     rejected_candidates: int = 0
     last_metrics: str = ""
     quality_mode: str = "Balanced"
+    audio_backend: str = "Detecting"
 
 
 @dataclass
@@ -258,12 +259,16 @@ class TinyMozartStreamer:
     def _play_midi_file(self, midi_path: Path) -> bool:
         rendered_audio = self._render_with_soundfont(midi_path)
         if rendered_audio is not None:
+            with self._lock:
+                self.status.audio_backend = "FluidSynth"
             self._play_interruptible(rendered_audio)
             return True
 
         try:
             if not pygame.mixer.get_init():
                 pygame.mixer.init(frequency=SAMPLE_RATE, size=-16, channels=2, buffer=1024)
+            with self._lock:
+                self.status.audio_backend = "pygame MIDI"
             pygame.mixer.music.load(str(midi_path))
             pygame.mixer.music.play()
             while pygame.mixer.music.get_busy() and not self._stop.is_set():
@@ -273,6 +278,7 @@ class TinyMozartStreamer:
         except Exception as exc:
             with self._lock:
                 self.status.last_message = f"MIDI playback failed, using fallback: {exc}"
+                self.status.audio_backend = "Built-in synth fallback"
             try:
                 pygame.mixer.music.stop()
             except Exception:
@@ -283,6 +289,8 @@ class TinyMozartStreamer:
         fluidsynth = os.environ.get("FLUIDSYNTH_EXE") or shutil.which("fluidsynth")
         soundfont = _find_soundfont()
         if not fluidsynth or not soundfont:
+            with self._lock:
+                self.status.audio_backend = "pygame MIDI"
             return None
 
         wav_path = midi_path.with_suffix(".wav")
