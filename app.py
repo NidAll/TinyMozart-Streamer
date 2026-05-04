@@ -5,12 +5,26 @@ import time
 import streamlit as st
 
 import streamer as streamer_module
-from tinymozart_model import QUALITY_PROFILES, settings_for_profile
+import tinymozart_model as model_module
 
 
 STREAMER_VERSION = getattr(streamer_module, "STREAMER_VERSION", "piano-renderer-v2")
 StreamConfig = streamer_module.StreamConfig
 TinyMozartStreamer = streamer_module.TinyMozartStreamer
+QUALITY_PROFILES = getattr(
+    model_module,
+    "QUALITY_PROFILES",
+    {
+        "Fast": model_module.GenerationSettings(candidate_count=1),
+        "Balanced": model_module.GenerationSettings(candidate_count=2),
+        "High": model_module.GenerationSettings(candidate_count=4),
+    },
+)
+settings_for_profile = getattr(
+    model_module,
+    "settings_for_profile",
+    lambda profile: QUALITY_PROFILES.get(profile, QUALITY_PROFILES["Balanced"]),
+)
 
 
 st.set_page_config(page_title="TinyMozart Streamer", page_icon="🎹", layout="centered")
