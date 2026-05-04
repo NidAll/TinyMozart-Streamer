@@ -1,0 +1,11 @@
+[project]
+name = "tinymozart-streamer"
+version = "0.1.0"
+description = "Local one-button TinyMozart piano MIDI streamer with candidate scoring."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
