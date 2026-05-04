@@ -24,7 +24,7 @@ from tinymozart_model import BLOCK_SIZE, GenerationSettings, TinyMozartGenerator
 
 
 SAMPLE_RATE = 44_100
-STREAMER_VERSION = "quality-search-v6"
+STREAMER_VERSION = "quality-modes-v7"
 
 
 @dataclass
@@ -40,6 +40,7 @@ class StreamStatus:
     best_score: float = 0.0
     rejected_candidates: int = 0
     last_metrics: str = ""
+    quality_mode: str = "Balanced"
 
 
 @dataclass
@@ -47,6 +48,7 @@ class StreamConfig:
     settings: GenerationSettings = field(default_factory=GenerationSettings)
     context_tokens: int = BLOCK_SIZE
     queue_size: int = 2
+    quality_mode: str = "Balanced"
 
 
 class TinyMozartStreamer:
@@ -153,7 +155,10 @@ class TinyMozartStreamer:
                 time.sleep(0.05)
                 continue
 
-            candidate = self._select_best_candidate(piece_index)
+            if self.config.settings.candidate_count <= 1:
+                candidate = self._generate_single_passage(piece_index)
+            else:
+                candidate = self._select_best_candidate(piece_index)
             if candidate is None:
                 continue
             midi_path, score, metrics = candidate
@@ -164,7 +169,29 @@ class TinyMozartStreamer:
                     self.status.chunks_generated += 1
                     self.status.best_score = metrics.score
                     self.status.last_metrics = _format_metrics(metrics)
+                    self.status.quality_mode = self.config.quality_mode
                     self.status.last_message = "Buffered"
+
+    def _generate_single_passage(self, piece_index: int) -> tuple[Path, Score, CandidateMetrics] | None:
+        with self._lock:
+            self.status.last_message = "Generating fast passage"
+            self.status.quality_mode = self.config.quality_mode
+        settings = replace(
+            self.config.settings,
+            seed=int(time.time() * 1000) % 2_147_483_647,
+        )
+        new_tokens = self._generator.generate([0], settings)  # type: ignore[union-attr]
+        tokens = [token for token in new_tokens if token != 0]
+        if not tokens:
+            return None
+        midi_path, score = self._tokens_to_piece(piece_index, 0, tokens)
+        metrics = self._scorer.evaluate(tokens, score)
+        with self._lock:
+            self.status.rejected_candidates = 1 if metrics.rejected else 0
+            self.status.best_score = metrics.score
+            self.status.last_metrics = _format_metrics(metrics)
+            self.status.last_message = "Scored fast passage"
+        return midi_path, score, metrics
 
     def _select_best_candidate(self, piece_index: int) -> tuple[Path, Score, CandidateMetrics] | None:
         best: tuple[Path, Score, CandidateMetrics] | None = None

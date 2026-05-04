@@ -10,6 +10,10 @@ The app loads TinyMozart locally, generates several MIDI candidates, scores/reje
 - Streamlit one-button Start/Stop UI.
 - CUDA-enabled PyTorch inference when a compatible NVIDIA GPU is available.
 - Candidate search for more consistent music.
+- Three generation quality modes:
+  - `Fast`: no multi-candidate search, quickest startup.
+  - `Balanced`: 2 candidates per passage.
+  - `High`: 4 candidates per passage, best default quality.
 - MIDI quality scoring for note count, pitch range, density, repetition, and silence.
 - Default playback through pygame MIDI, with optional SoundFont rendering if configured later.
 
@@ -25,6 +29,22 @@ python -m pip install -r requirements.txt
 ```
 
 The requirements file uses the PyTorch CUDA 13.0 wheel index. If you need CPU-only PyTorch or a different CUDA version, adjust the first lines of `requirements.txt`.
+
+## Auto Install And Launch
+
+On Windows, run:
+
+```powershell
+.\launch.bat
+```
+
+or:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run.ps1
+```
+
+The launch script creates `venv` if needed, installs dependencies from `requirements.txt`, and starts the Streamlit UI.
 
 ## Run
 

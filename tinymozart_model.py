@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import replace
 from pathlib import Path
 
 import torch
@@ -101,6 +102,47 @@ class GenerationSettings:
     candidate_count: int = 4
     temperature_jitter: float = 0.08
     seed: int | None = None
+
+
+QUALITY_PROFILES: dict[str, GenerationSettings] = {
+    "Fast": GenerationSettings(
+        chunk_tokens=384,
+        temperature=0.92,
+        top_p=0.92,
+        top_k=34,
+        repetition_penalty=1.30,
+        repetition_window=80,
+        no_repeat_ngram_size=5,
+        candidate_count=1,
+        temperature_jitter=0.0,
+    ),
+    "Balanced": GenerationSettings(
+        chunk_tokens=512,
+        temperature=0.90,
+        top_p=0.92,
+        top_k=34,
+        repetition_penalty=1.35,
+        repetition_window=96,
+        no_repeat_ngram_size=5,
+        candidate_count=2,
+        temperature_jitter=0.06,
+    ),
+    "High": GenerationSettings(
+        chunk_tokens=512,
+        temperature=0.90,
+        top_p=0.92,
+        top_k=34,
+        repetition_penalty=1.35,
+        repetition_window=96,
+        no_repeat_ngram_size=5,
+        candidate_count=4,
+        temperature_jitter=0.08,
+    ),
+}
+
+
+def settings_for_profile(profile: str) -> GenerationSettings:
+    return replace(QUALITY_PROFILES.get(profile, QUALITY_PROFILES["Balanced"]))
 
 
 class TinyMozartGenerator:

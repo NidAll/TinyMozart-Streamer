@@ -5,9 +5,11 @@ import time
 import streamlit as st
 
 import streamer as streamer_module
+from tinymozart_model import QUALITY_PROFILES, settings_for_profile
 
 
 STREAMER_VERSION = getattr(streamer_module, "STREAMER_VERSION", "piano-renderer-v2")
+StreamConfig = streamer_module.StreamConfig
 TinyMozartStreamer = streamer_module.TinyMozartStreamer
 
 
@@ -98,12 +100,32 @@ st.markdown(
 )
 
 
+profile_names = list(QUALITY_PROFILES)
+if "quality_mode" not in st.session_state:
+    st.session_state.quality_mode = "Balanced"
+
+existing_streamer = st.session_state.get("streamer")
+existing_status = existing_streamer.snapshot() if existing_streamer else None
+selected_mode = st.selectbox(
+    "Quality mode",
+    profile_names,
+    index=profile_names.index(st.session_state.quality_mode),
+    disabled=bool(existing_status and existing_status.running),
+    label_visibility="collapsed",
+)
+st.session_state.quality_mode = selected_mode
+
+streamer_key = f"{STREAMER_VERSION}:{selected_mode}"
 if (
     "streamer" not in st.session_state
-    or st.session_state.get("streamer_version") != STREAMER_VERSION
+    or st.session_state.get("streamer_key") != streamer_key
 ):
-    st.session_state.streamer = TinyMozartStreamer()
-    st.session_state.streamer_version = STREAMER_VERSION
+    config = StreamConfig(
+        settings=settings_for_profile(selected_mode),
+        quality_mode=selected_mode,
+    )
+    st.session_state.streamer = TinyMozartStreamer(config)
+    st.session_state.streamer_key = streamer_key
 
 streamer: TinyMozartStreamer = st.session_state.streamer
 status = streamer.snapshot()
@@ -145,6 +167,7 @@ st.markdown(
       <div class="tm-stat"><div class="tm-label">Status</div><div class="tm-value">{status.last_message}</div></div>
       <div class="tm-stat"><div class="tm-label">Best Score</div><div class="tm-value">{status.best_score:.1f}</div></div>
       <div class="tm-stat"><div class="tm-label">Rejected</div><div class="tm-value">{status.rejected_candidates}</div></div>
+      <div class="tm-stat"><div class="tm-label">Mode</div><div class="tm-value">{selected_mode}</div></div>
       <div class="tm-stat"><div class="tm-label">Backend</div><div class="tm-value">{STREAMER_VERSION}</div></div>
       <div class="tm-stat tm-wide"><div class="tm-label">Quality Metrics</div><div class="tm-metrics">{status.last_metrics or "Waiting for candidate scores"}</div></div>
     </div>
