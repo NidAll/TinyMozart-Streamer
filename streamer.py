@@ -289,12 +289,12 @@ class TinyMozartStreamer:
         command = [
             fluidsynth,
             "-ni",
-            str(soundfont),
-            str(midi_path),
             "-F",
             str(wav_path),
             "-r",
             str(SAMPLE_RATE),
+            str(soundfont),
+            str(midi_path),
         ]
         try:
             with self._lock:
